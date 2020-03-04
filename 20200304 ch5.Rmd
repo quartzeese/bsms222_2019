@@ -1,0 +1,25 @@
+---
+title: "chapter 5"
+output: html_notebook
+---
+
+# Ch 5 Importing data
+
+```{r}
+wd <- getwd()
+```
+
+url <- "https://raw.githubusercontent.com/rafalab/dslabs/master/inst/extdata/murders.csv"
+dat <- read_csv(url)
+download.file(url, "murders.csv")
+
+when using download.file you should be careful as it will overwrite existing files without warning.
+
+
+```{r}
+tmp_filename <- tempfile()
+download.file(url, tmp_filename)
+dat <- read_csv(tmp_filename)
+file.remove(tmp_filename)
+```
+
