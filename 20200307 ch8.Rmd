@@ -1,0 +1,185 @@
+---
+title: "Chapter 8. Visulaizing data distributions"
+author: "quartzeese"
+date: '2020 3 5 '
+output: html_document
+---
+
+# Chapter 8 Visualizing data distributions
+
+데이터의 분포를 눈으로 보기 좋다. 
+
+## 8.10 Quantile-quantile plots
+
+First let’s define the theoretical quantiles for the normal distribution. In statistics books we use the symbol  
+Φ(x) to define the function that gives us the probability of a standard normal distribution being smaller than  x. So, for example,  
+Φ(−1.96)=0.025 and  Φ(1.96)=0.975
+ . In R, we can evaluate  Φ using the pnorm function:
+ 
+   
+```{r}
+library(ggplot2)
+library(dslabs)
+data(heights)
+data(murders)
+qnorm(0.975)
+#> [1] 1.96 -> z = 1.96일 때 1.96보다 작을 확률이 0.975, 이때 1.96이 quantile 
+qnorm(0.975, mean = 5, sd = 2)
+#> [1] 8.92
+
+heights %>% filter(sex == "Male") %>%
+  ggplot(aes(sample = scale(height))) + 
+  geom_qq() +
+  geom_abline()
+
+```
+
+
+## 8.16 ggplot2 geometries
+
+1. barplots
+
+```{r}
+murders %>% ggplot(aes(region)) + geom_bar()
+```
+
+```{r}
+
+data(murders)
+tab <- murders %>% 
+  count(region) %>% 
+  mutate(proportion = n/sum(n))
+
+tab %>% ggplot(aes(region, proportion)) + geom_bar(stat = "identity")
+
+```
+
+2. Histogram
+
+
+```{r}
+heights %>% 
+  filter(sex == "Female") %>% 
+  ggplot(aes(height)) + 
+  geom_histogram(binwidth = 1)
+
+heights %>% 
+  filter(sex == "Female") %>% 
+  ggplot(aes(height)) +
+  geom_histogram(binwidth = 1, fill = "blue", col = "black") +
+  xlab("Male heights in inches") + 
+  ggtitle("Histogram")
+
+```
+
+
+3. Density plots
+
+```{r}
+heights %>% 
+  filter(sex == "Female") %>%
+  ggplot(aes(height)) +
+  geom_density()
+heights %>% 
+  filter(sex == "Female") %>%
+  ggplot(aes(height)) +
+  geom_density(fill="blue")
+
+heights %>% 
+  filter(sex == "Female") %>%
+  ggplot(aes(height)) +
+  geom_density(fill="blue",adjust=2)
+
+```
+
+
+
+4. Boxplots
+geom_boxplot
+
+For this geometry, we need arguments x as the categories, and y as the values.
+
+```{r}
+heights %>% ggplot(aes(sex,height)) +
+  geom_boxplot()
+
+```
+
+
+5. QQ-plot
+
+```{r}
+heights %>% filter(sex=="Male") %>%
+  ggplot(aes(sample = height)) +
+  geom_qq()
+```
+
+
+
+```{r}
+
+#standard unit에서 비교
+params <- heights %>% filter(sex=="Male") %>%
+  summarize(mean = mean(height), sd = sd(height))
+
+heights %>% filter(sex=="Male") %>%
+  ggplot(aes(sample = height)) +
+  geom_qq(dparams = params) +
+  geom_abline()
+
+##처럼ㅎ ㅏ거나 아니면
+
+
+heights %>% 
+  filter(sex=="Male") %>%
+  ggplot(aes(sample = scale(height))) + 
+  geom_qq() +
+  geom_abline()
+
+```
+
+
+6. Images
+
+ggplot2의 image 만드는 geom은 2가지가 있ㅇ므
+geom_tile과 geom_raster 둘이 비슷함. 
+
+```{r}
+x <- expand.grid(x = 1:12, y = 1:10) %>% 
+  mutate(z = 1:120) 
+# tidy version of a matrix, matrix(1:120, 12, 10).
+print(x)
+```
+
+```{r}
+x %>% ggplot(aes(x, y, fill = z)) + 
+  geom_raster() + 
+  scale_fill_gradientn(colors =  terrain.colors(10))
+```
+
+
+7.qplot
+
+
+```{r}
+x <- heights %>% 
+  filter(sex=="Male") %>% 
+  pull(height)
+
+qplot(x)
+qplot(sample = scale(x)) + geom_abline()
+
+heights %>% qplot(sex, height, data = ., geom = 'boxplot')
+qplot(x, bins=15, color = I("black"), xlab = "Population")
+
+#  In general, the function I is used in R to say “keep it as it is”.
+# 
+
+```
+
+
+
+
+
+
+

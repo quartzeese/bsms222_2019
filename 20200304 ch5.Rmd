@@ -1,5 +1,5 @@
 ---
-title: "chapter 5"
+title: "chapter 5,7"
 output: html_notebook
 ---
 
@@ -22,4 +22,264 @@ download.file(url, tmp_filename)
 dat <- read_csv(tmp_filename)
 file.remove(tmp_filename)
 ```
+
+
+# Chapter 7. ggplot
+
+```{r}
+library(dslabs)
+data(murders)
+library(dplyr)
+library(ggplot2, quietly = T)
+
+```
+
+```{r}
+p <- ggplot(data = murders)
+class(p)
+murders %>% ggplot()
+
+```
+
+
+## 7.3 Geometries
+
+Layers를 더함으로서 graph를 만들 수 있다. Layes can define geometires, compute summary statics, define what scales to use or even chage styles
+
++ symbol을 이용해서 layer를 더함. 
+
+
+DATA %>% ggplot() + LAYER 1 + LAYER 2 + … + LAYER N 
+
+요런 식으로 생김 
+
+```{r}
+murders %>% ggplot() +
+  geom_point(aes(x = population/10^6, y=total))
+
+p + geom_point(aes(population/10^6, total), size = 3) +
+  geom_text(aes(population/10^6, total, label = abb))
+```
+
+
+
+size는 mapping은 아님. 
+반대로 mapping은 데이터를 사용해야 하는거고 aes()안에 들어가 있어야 ㅎ마. 
+
+
+
+```{r}
+p + geom_point(aes(population/10^6, total), size = 3) +
+  geom_text(aes(population/10^6, total, label = abb), nudge_x = 1.5)
+
+# nudge_x : text를 약간 오른쪽, 왼쪽으로 옮겨 줌 
+```
+
+
+## 7.6 Global vs Local aesthetic mappings 
+
+population/10^6 계속 쓰기 귀찮으니까 처음부터 mapping을 해 놓고 
+그 다음에 다른 것들을 하면 더 편함
+
+```{r}
+p <- murders %>% ggplot(aes(population/10^6, total, label = abb))
+
+p + geom_point(size = 3) + 
+  geom_text(nudge_x = 1.5)
+
+# 요렇게 하면 aes 계속 안 불러도 됨 
+
+p + geom_point(size = 3) +  
+  geom_text(aes(x = 10, y = 800, label = "Hello there!"))
+
+# 이렇게 local mapping으로 overrie할 수도 있음 
+
+```
+
+
+
+## 7.7 Scale 바꾸기
+log scale로 바꾸고 싶다면..?
+
+
+```{r}
+p + geom_point(size = 3) +  
+  geom_text(nudge_x = 0.05) + 
+  scale_x_continuous(trans = "log10") +
+  scale_y_continuous(trans = "log10") 
+
+p + geom_point(size = 3) +  
+  geom_text(nudge_x = 0.05) + 
+  scale_x_log10() +
+  scale_y_log10() 
+
+```
+
+
+
+## 7.8 Lables and titles
+
+
+```{r}
+p + geom_point(size = 3) +  
+  geom_text(nudge_x = 0.05) + 
+  scale_x_log10() +
+  scale_y_log10() +
+  xlab("Populations in millions (log scale)") + 
+  ylab("Total number of murders (log scale)") +
+  ggtitle("US Gun Murders in 2010")
+
+
+```
+
+
+## 7.9 Categories as colors
+
+```{r}
+p <-  murders %>% ggplot(aes(population/10^6, total, label = abb)) +   
+  geom_text(nudge_x = 0.05) + 
+  scale_x_log10() +
+  scale_y_log10() +
+  xlab("Populations in millions (log scale)") + 
+  ylab("Total number of murders (log scale)") +
+  ggtitle("US Gun Murders in 2010")
+# 전체를 같은 색으로 -> 굳이? 
+p + geom_point(size = 3, color ="blue")
+
+# 지역마다 다른 색으로 -> 이거를 해야지
+p + geom_point(aes(col=region), size = 3)
+p + geom_point(aes(col=region), size = 3, show.legend = FALSE)
+
+# legend를 보이고 싶지 않으면, show.legend = FALSE를 넣으면 됨 
+
+```
+
+## 7.10 Annotation, shapes, and adjustments
+
+
+
+murder rate를 곱하고 싶다면.. y= rx
+
+log y = log r + log x
+
+```{r}
+r <- murders %>% 
+  summarize(rate = sum(total) /  sum(population) * 10^6) %>% 
+  pull(rate)
+p + geom_point(aes(col=region), size = 3) + 
+  geom_abline(intercept = log10(r))
+
+p <- p + geom_abline(intercept = log10(r), lty = 2, color = "darkgrey") +
+  geom_point(aes(col=region), size = 3)  
+print(p)
+p <- p + scale_color_discrete(name = "Region") 
+print(p)
+
+```
+
+## 7.11 Add-on packages
+
+
+
+```{r}
+ds_theme_set()
+library(ggthemes)
+p + theme_economist()
+p + theme_fivethirtyeight()
+
+#ggrepel package -> label의 포지션을 아 ㄴ겹치게 해줌. 
+# geom_text 대신 geom_text_repel 사용하면 됨
+library(ggrepel)
+p <-  murders %>% ggplot(aes(population/10^6, total, label = abb)) +   
+  geom_text_repel(nudge_x = 0.05) + 
+  scale_x_log10() +
+  scale_y_log10() +
+  xlab("Populations in millions (log scale)") + 
+  ylab("Total number of murders (log scale)") +
+  ggtitle("US Gun Murders in 2010")
+
+p <- p + geom_abline(intercept = log10(r), lty = 2, color = "darkgrey") +
+  geom_point(aes(col=region), size = 3)  
+p <- p + scale_color_discrete(name = "Region") 
+print(p)
+
+```
+
+
+## 7.12 Putting all together
+
+```{r}
+
+library(ggthemes)
+library(ggrepel)
+
+r <- murders %>% 
+  summarize(rate = sum(total) /  sum(population) * 10^6) %>%
+  pull(rate)
+
+murders %>% ggplot(aes(population/10^6, total, label = abb)) +   
+  geom_abline(intercept = log10(r), lty = 2, color = "darkgrey") +
+  geom_point(aes(col=region), size = 3) +
+  geom_text_repel() + 
+  scale_x_log10() +
+  scale_y_log10() +
+  xlab("Populations in millions (log scale)") + 
+  ylab("Total number of murders (log scale)") +
+  ggtitle("US Gun Murders in 2010") + 
+  scale_color_discrete(name = "Region") +
+  theme_economist()
+
+```
+
+
+## 7.13 Quick plot, qplot
+
+```{r}
+# flexibility는 없지만 빠르게 그려버릴 수있음
+
+data(murders)
+x <- log10(murders$population)
+y <- murders$total
+
+# ggplot 사용 시
+data.frame(x = x, y = y) %>% 
+  ggplot(aes(x, y)) +
+  geom_point()
+
+# qplot사용 시
+qplot(x,y)
+
+```
+
+
+## 7.14 Grids of plots 
+
+```{r}
+
+library(gridExtra)
+p1 <- qplot(x)
+p2 <- qplot(x,y)
+grid.arrange(p1, p2, ncol = 2)
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
